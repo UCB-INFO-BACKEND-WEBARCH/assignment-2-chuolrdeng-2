@@ -1,0 +1,74 @@
+# Docker Compose configuration for running the complete Task Manager stack
+services:
+  # PostgreSQL database service for persistent task storage
+  db:
+    image: postgres:15
+    container_name: task_manager_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: task_manager
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mount named volume to persist database data across container restarts
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Verify database is ready before other services start
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis service for background job queue messaging
+  redis:
+    image: redis:7
+    container_name: task_manager_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      # Verify Redis is responsive
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main Flask API application server
+  app:
+    build: .
+    container_name: task_manager_app
+    environment:
+      # Database connection string for Flask app
+      DATABASE_URL: postgresql://postgres:password@db:5432/task_manager
+      # Redis connection string for job queue
+      REDIS_URL: redis://redis:6379
+      FLASK_ENV: production
+    ports:
+      - "5000:5000"
+    depends_on:
+      # Wait for database and Redis to be healthy before starting app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python main.py
+
+  # Background worker service that processes queued jobs (e.g., sending notifications)
+  worker:
+    build: .
+    container_name: task_manager_worker
+    environment:
+      # Same database and Redis connections as app
+      DATABASE_URL: postgresql://postgres:password@db:5432/task_manager
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      # Wait for database and Redis to be healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python worker.py
+
+# Named volume for PostgreSQL data persistence
+volumes:
+  postgres_data:

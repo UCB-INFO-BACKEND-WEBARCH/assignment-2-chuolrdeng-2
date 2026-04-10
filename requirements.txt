@@ -1,0 +1,9 @@
+Flask==2.3.0
+Flask-SQLAlchemy==3.0.0
+SQLAlchemy==2.0.15
+Flask-Migrate==4.0.4
+marshmallow==3.19.0
+psycopg2-binary==2.9.6
+redis==4.5.4
+rq==1.13.0
+python-dateutil==2.8.2
