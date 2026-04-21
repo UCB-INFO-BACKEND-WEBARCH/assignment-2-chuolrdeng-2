@@ -7,13 +7,13 @@ class CategorySchema(Schema):
     """Schema for validating and serializing Category objects."""
     id = fields.Int(dump_only=True)  # Read-only
     name = fields.Str(required=True, validate=validate.Length(min=1, max=50))
-    color = fields.Str(allow_none=True)  # Optional hex color
+    color = fields.Str(allow_none=True, load_default=None)  # Optional hex color
     task_count = fields.Int(dump_only=True)  # Computed field for API responses
     
     @validates('color')
     def validate_color(self, value):
         """Validate that color is a valid hex code format (#RRGGBB)."""
-        if value is not None:
+        if value is not None and value != '':
             if not re.match(r'^#[0-9A-Fa-f]{6}$', value):
                 raise ValidationError('Must be valid hex color format (#RRGGBB)')
 

@@ -77,11 +77,22 @@ def create_category():
         201: JSON with created category details
         400: If validation fails or name already exists
     """
+    # Get JSON data
+    try:
+        json_data = request.get_json(force=True, silent=False)
+    except Exception as e:
+        return jsonify({'errors': {'_form': [f'Invalid JSON: {str(e)}']}}), 400
+    
+    if not json_data:
+        return jsonify({'errors': {'_form': ['No JSON data provided']}}), 400
+    
     # Validate incoming data
     try:
-        data = category_schema.load(request.get_json())
+        data = category_schema.load(json_data)
     except ValidationError as err:
         return jsonify({'errors': err.messages}), 400
+    except TypeError as e:
+        return jsonify({'errors': {'_form': [f'Type error during validation: {str(e)}']}}), 400
     
     # Ensure category name is unique
     existing = Category.query.filter_by(name=data['name']).first()
@@ -89,14 +100,23 @@ def create_category():
         return jsonify({'errors': {'name': ['Category with this name already exists.']}}), 400
     
     # Create and save new category
-    category = Category(
-        name=data['name'],
-        color=data.get('color')
-    )
-    db.session.add(category)
-    db.session.commit()
+    try:
+        category = Category(
+            name=data['name'],
+            color=data.get('color')
+        )
+        db.session.add(category)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'errors': {'_form': [f'Database error: {str(e)}']}}), 400
     
-    result = category_schema.dump(category)
+    # Build response with category info
+    result = {
+        'id': category.id,
+        'name': category.name,
+        'color': category.color
+    }
     return jsonify(result), 201
 
 
@@ -123,3 +143,53 @@ def delete_category(category_id):
     db.session.commit()
     
     return jsonify({'message': 'Category deleted'}), 200
+
+
+@categories_bp.route('/categories/<int:category_id>', methods=['PUT'])
+def update_category(category_id):
+    """Update an existing category with partial or complete data.
+    
+    Request Body:
+        Any subset of: name, color
+    
+    Returns:
+        200: JSON with updated category details
+        404: If category doesn't exist
+        400: If validation fails or name already exists
+    """
+    # Fetch the category to update
+    category = Category.query.get(category_id)
+    
+    if not category:
+        return jsonify({'error': 'Category not found'}), 404
+    
+    # Get JSON data
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'errors': {'_form': ['No JSON data provided']}}), 400
+    
+    # Validate incoming data (partial=True allows partial updates)
+    try:
+        data = category_schema.load(json_data, partial=True)
+    except ValidationError as err:
+        return jsonify({'errors': err.messages}), 400
+    
+    # Check if name is being changed and if new name already exists
+    if 'name' in data and data['name'] != category.name:
+        existing = Category.query.filter_by(name=data['name']).first()
+        if existing:
+            return jsonify({'errors': {'name': ['Category with this name already exists.']}}), 400
+    
+    # Apply updates to category
+    for key, value in data.items():
+        setattr(category, key, value)
+    
+    db.session.commit()
+    
+    # Build response with category info
+    result = {
+        'id': category.id,
+        'name': category.name,
+        'color': category.color
+    }
+    return jsonify(result), 200

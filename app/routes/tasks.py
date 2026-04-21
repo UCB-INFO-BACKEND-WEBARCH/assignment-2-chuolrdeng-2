@@ -78,9 +78,14 @@ def create_task():
         201: JSON with created task details and notification_queued status
         400: If validation fails or category doesn't exist
     """
+    # Get JSON data
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'errors': {'_form': ['No JSON data provided']}}), 400
+    
     # Validate incoming data against schema
     try:
-        data = task_schema.load(request.get_json())
+        data = task_schema.load(json_data)
     except ValidationError as err:
         return jsonify({'errors': err.messages}), 400
     
