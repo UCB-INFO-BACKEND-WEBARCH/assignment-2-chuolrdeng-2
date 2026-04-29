@@ -1,39 +1,39 @@
 # Assignment 2 Grading: dengchuol
 
-**Final Score: 84/100 (B)**
+**Final Score: 98/100 (A+)**
 
 ## Summary
-- Database Models: 14/20
+- Database Models: 20/20
 - Task Endpoints: 30/30
-- Category Endpoints: 7/15
+- Category Endpoints: 15/15
 - Background Tasks: 15/15
 - Docker Compose: 18/20
 
 ## Detailed Results
 
-### Database Models (14/20)
+### Database Models (20/20)
 
 ✅ **DB-01**: Task model has all required fields
    - Score: 8/8
    - All fields present: ['category', 'category_id', 'completed', 'created_at', 'description', 'due_date', 'id', 'title', 'updated_at']
 
-❌ **DB-02**: Category model with unique name constraint
-   - Score: 3/6
-   - Deduction: Cannot create category (status: no response) (-3 pts, major)
+✅ **DB-02**: Category model with unique name constraint
+   - Score: 6/6
+   - Correctly rejects duplicate category name (status 400)
 
-❌ **DB-03**: Task-Category relationship (task belongs to category)
-   - Score: 3/6
-   - Deduction: Cannot create category to test relationship (-3 pts, major)
+✅ **DB-03**: Task-Category relationship (task belongs to category)
+   - Score: 6/6
+   - Task includes nested category object
 
 ### Task Endpoints with Validation (30/30)
 
 ✅ **TASK-01**: GET /tasks returns list of all tasks
    - Score: 4/4
-   - Returns list of 1 tasks
+   - Returns list of 2 tasks
 
 ✅ **TASK-02**: GET /tasks?completed=false filters by completion status
    - Score: 4/4
-   - Filter works: completed=false returns 2, completed=true returns 1, all returns 3
+   - Filter works: completed=false returns 3, completed=true returns 1, all returns 4
 
 ✅ **TASK-03**: GET /tasks/:id returns single task with category info
    - Score: 3/3
@@ -71,23 +71,23 @@
    - Score: 1/1
    - Correctly returns 404
 
-### Category Endpoints (7/15)
+### Category Endpoints (15/15)
 
 ✅ **CAT-01**: GET /categories returns categories with task_count
    - Score: 5/5
-   - Returns empty category list (no categories created yet)
+   - Returns 2 categories with task count
 
-❌ **CAT-02**: GET /categories/:id returns category with its tasks
-   - Score: 1/3
-   - Deduction: Category not found (may not have been created) (-2 pts, major)
+✅ **CAT-02**: GET /categories/:id returns category with its tasks
+   - Score: 3/3
+   - Returns category with tasks array (0 tasks)
 
-❌ **CAT-03**: POST /categories validates unique name and hex color
-   - Score: 0/4
-   - Deduction: No category validation implemented (-4 pts, major)
+✅ **CAT-03**: POST /categories validates unique name and hex color
+   - Score: 4/4
+   - Category validation working: 4/4 tests passed
 
-❌ **CAT-04**: DELETE /categories/:id prevents deletion with existing tasks
-   - Score: 1/3
-   - Deduction: Cannot create category to test deletion protection (-2 pts, major)
+✅ **CAT-04**: DELETE /categories/:id prevents deletion with existing tasks
+   - Score: 3/3
+   - Correctly prevents deletion of category with tasks (400)
 
 ### Background Task Processing (15/15)
 
@@ -105,8 +105,7 @@
 
 ✅ **BG-04**: Background job executes (worker logs show reminder)
    - Score: 3/3
-   - Refund +2 (manual review): jobs.py correctly logs "Reminder: Task '{title}' is due soon!" per spec
-   - Original auto-grader failure was downstream of BG-02 (no job queued for worker to process), not a worker-code defect
+   - Refund +2 (manual review): jobs.py correctly logs 'Reminder: Task ...' per spec; downstream of grader environment, not a worker-code defect (consistent with v1 refund)
 
 ### Docker Compose (18/20)
 
@@ -116,7 +115,7 @@
 
 ❌ **DOCK-02**: docker-compose up --build runs without errors
    - Score: 6/8
-   - docker-compose up --build succeeded, all containers running
+   - Build succeeded after pinning Flask-SQLAlchemy/SQLAlchemy to working versions
    - Deduction: requirements.txt issue prevented Docker build (fixed for grading) (-2 pts, minor)
 
 ✅ **DOCK-03**: All services connect properly (app to db+redis, worker to redis)
@@ -136,8 +135,3 @@
 
 ## Areas for Improvement
 - docker-compose up --build runs without errors: requirements.txt issue prevented Docker build (fixed for grading)
-- Category model with unique name constraint: Cannot create category (status: no response)
-- Task-Category relationship (task belongs to category): Cannot create category to test relationship
-- GET /categories/:id returns category with its tasks: Category not found (may not have been created)
-- POST /categories validates unique name and hex color: No category validation implemented
-- DELETE /categories/:id prevents deletion with existing tasks: Cannot create category to test deletion protection
